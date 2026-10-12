@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AniTrack.Api/AniTrack.Api.csproj" />
+  </Folder>
+</Solution>
