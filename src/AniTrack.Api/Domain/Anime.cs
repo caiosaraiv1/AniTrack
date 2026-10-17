@@ -2,15 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace AniTrack.Api.Domain;
 
-public enum AnimeStatus
-{
-      Finished,
-      Releasing,
-      NotYetReleased,
-      Cancelled,
-      Hiatus
-}
-
 public class Anime
 {
       public int Id { get; private set; }
