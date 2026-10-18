@@ -1,4 +1,4 @@
-namespace AniTrack.Api.Domain.Abstracions;
+namespace AniTrack.Api.Domain.Abstractions;
 
 public interface IAnimeProvider
 {
