@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using AniTrack.Api.Domain.Abstractions;
+using AniTrack.Api.Infrastructure.Persistence;
 using AniTrack.Api.Integrations.AniList;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,13 @@ builder.Services
       {
             client.BaseAddress = new Uri(baseUrl);
             client.Timeout = TimeSpan.FromSeconds(10);
+      });
+
+var connectionString = builder.Configuration.GetConnectionString("AniTrack") ?? throw new InvalidOperationException(
+        "Connection string 'AniTrack' is missing. Set it with 'dotnet user-secrets' in development or via environment variables."); builder.Services
+      .AddDbContext<AppDbContext>(client =>
+      {
+            client.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
       });
 
 var app = builder.Build();

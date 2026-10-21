@@ -4,7 +4,7 @@ public class PersonalAnime
 {
       public int Id { get; private set; }
       public int AnimeId { get; private set; }
-      public Anime Anime { get; private set; }
+      public Anime Anime { get; private set; } = null!;
       public int CurrentEpisode { get; private set; }
       public DateTimeOffset AddedAt { get; private set; }
       public DateTimeOffset ProgressUpdatedAt { get; private set; }
@@ -21,6 +21,9 @@ public class PersonalAnime
             AddedAt = now;
             ProgressUpdatedAt = now;
       }
+
+      // Para o EF Core
+      private PersonalAnime() { }
 
       public void UpdateProgress(int episode)
       {

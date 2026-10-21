@@ -7,7 +7,7 @@ public class Anime
       public int Id { get; private set; }
       public int AniListId { get; private set; }
       public int? MalId { get; private set; }
-      public string Title { get; private set; }
+      public string Title { get; private set; } = null!;
       public int? TotalEpisodes { get; private set; }
       public int? NextEpisode { get; private set; }
       public DateTimeOffset? NextEpisodeAiringAt { get; private set; }
@@ -26,7 +26,9 @@ public class Anime
             Sync(malId, title, totalEpisodes, nextEpisode, nextEpisodeAiringAt, status, imageUrl);
       }
 
-      [MemberNotNull(nameof(Title))]
+      // Para o EF Core
+      private Anime() { }
+
       public void Sync(int? malId, string title, int? totalEpisodes, int? nextEpisode,
     DateTimeOffset? nextEpisodeAiringAt, AnimeStatus status, Uri? imageUrl)
       {
