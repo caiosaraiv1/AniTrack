@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace AniTrack.Api.Domain;
 
 public class Anime
@@ -15,45 +13,51 @@ public class Anime
       public Uri? ImageUrl { get; private set; }
       public DateTimeOffset LastSyncedAt { get; private set; }
 
-      public Anime(int aniListId, int? malId, string title, int? totalEpisodes,
-            int? nextEpisode, DateTimeOffset? nextEpisodeAiringAt, AnimeStatus status, Uri? imageUrl)
+      public Anime(AnimeDetails details)
       {
-            if (aniListId <= 0)
-                  throw new ArgumentOutOfRangeException(nameof(aniListId), "AniList ID cannot be less or equal to zero.");
+            ArgumentNullException.ThrowIfNull(details);
 
-            AniListId = aniListId;
+            if (details.AniListId <= 0)
+                  throw new ArgumentOutOfRangeException(nameof(details), "AniList ID must be greater than zero.");
 
-            Sync(malId, title, totalEpisodes, nextEpisode, nextEpisodeAiringAt, status, imageUrl);
+            AniListId = details.AniListId;
+
+            Sync(details);
       }
 
-      // Para o EF Core
+      // Used only by EF Core to create instances when loading from the database.
       private Anime() { }
 
-      public void Sync(int? malId, string title, int? totalEpisodes, int? nextEpisode,
-    DateTimeOffset? nextEpisodeAiringAt, AnimeStatus status, Uri? imageUrl)
+      public void Sync(AnimeDetails details)
       {
-            if (malId <= 0)
-                  throw new ArgumentOutOfRangeException(nameof(malId), "MalId cannot be less or equal to zero.");
+            ArgumentNullException.ThrowIfNull(details);
 
-            if (string.IsNullOrWhiteSpace(title))
-                  throw new ArgumentException("Title is required.", nameof(title));
+            if (details.AniListId != AniListId)
+                  throw new ArgumentException(
+                      $"Cannot sync anime {AniListId} with data from anime {details.AniListId}.", nameof(details));
 
-            if (totalEpisodes <= 0)
-                  throw new ArgumentOutOfRangeException(nameof(totalEpisodes), "Total episodes cannot be less or equal to zero.");
+            if (details.MalId <= 0)
+                  throw new ArgumentOutOfRangeException(nameof(details), "MAL ID must be greater than zero.");
 
-            if (nextEpisode <= 0)
-                  throw new ArgumentOutOfRangeException(nameof(nextEpisode), "Next episode cannot be less or equal to zero.");
+            if (string.IsNullOrWhiteSpace(details.Title))
+                  throw new ArgumentException("Title is required.", nameof(details));
 
-            if (nextEpisode.HasValue != nextEpisodeAiringAt.HasValue)
-                  throw new ArgumentException("The next episode and its release date must be passed together.");
+            if (details.TotalEpisodes <= 0)
+                  throw new ArgumentOutOfRangeException(nameof(details), "Total episodes must be greater than zero.");
 
-            MalId = malId;
-            Title = title;
-            TotalEpisodes = totalEpisodes;
-            NextEpisode = nextEpisode;
-            NextEpisodeAiringAt = nextEpisodeAiringAt;
-            Status = status;
-            ImageUrl = imageUrl;
+            if (details.NextEpisode <= 0)
+                  throw new ArgumentOutOfRangeException(nameof(details), "Next episode must be greater than zero.");
+
+            if (details.NextEpisode.HasValue != details.NextEpisodeAiringAt.HasValue)
+                  throw new ArgumentException("The next episode and its airing date must be provided together.", nameof(details));
+
+            MalId = details.MalId;
+            Title = details.Title;
+            TotalEpisodes = details.TotalEpisodes;
+            NextEpisode = details.NextEpisode;
+            NextEpisodeAiringAt = details.NextEpisodeAiringAt;
+            Status = details.Status;
+            ImageUrl = details.ImageUrl;
             LastSyncedAt = DateTimeOffset.UtcNow;
       }
 
@@ -63,10 +67,13 @@ public class Anime
             {
                   if (Status == AnimeStatus.Finished)
                         return TotalEpisodes;
-                  else if (Status == AnimeStatus.Releasing && NextEpisode.HasValue)
+
+                  if (Status == AnimeStatus.Releasing && NextEpisode.HasValue)
                         return NextEpisode - 1;
-                  else if (Status == AnimeStatus.NotYetReleased)
+
+                  if (Status == AnimeStatus.NotYetReleased)
                         return 0;
+
                   return null;
             }
       }
