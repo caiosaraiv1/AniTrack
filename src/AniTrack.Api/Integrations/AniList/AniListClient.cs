@@ -4,6 +4,7 @@ using AniTrack.Api.Domain.Exceptions;
 using AniTrack.Api.Integrations.AniList.Dtos;
 using AniTrack.Api.Integrations.AniList.Mappers;
 using System.Text.Json;
+using System.Linq.Expressions;
 
 namespace AniTrack.Api.Integrations.AniList;
 
@@ -34,6 +35,28 @@ public class AniListClient : IAnimeProvider
             }
         }
         """;
+      private const string GetAnimeByIdQuery = """
+    query ($id: Int!) {
+        Media(id: $id, type: ANIME) {
+            id
+            idMal
+            title {
+                romaji
+                english
+            }
+            format
+            episodes
+            status
+            nextAiringEpisode {
+                episode
+                airingAt
+            }
+            coverImage {
+                large
+            }
+        }
+    }
+    """;
 
       public AniListClient(HttpClient httpClient, ILogger<AniListClient> logger)
       {
@@ -62,7 +85,7 @@ public class AniListClient : IAnimeProvider
                   if (payload is null)
                         throw new AnimeProviderUnavailableException("AniList returned an empty response.");
 
-                  IReadOnlyList<AnimeSearchResult> results = AniListSearchMapper.ToSearchResults(payload);
+                  IReadOnlyList<AnimeSearchResult> results = AniListMapper.ToSearchResults(payload);
 
                   int received = payload.Data?.Page?.Media?.Count ?? 0;
                   int discarded = received - results.Count;
@@ -90,4 +113,44 @@ public class AniListClient : IAnimeProvider
                   throw new AnimeProviderUnavailableException("AniList did not respond in time.", ex);
             }
       }
+
+      public async Task<AnimeDetails?> GetByAniListIdAsync(int aniListId, CancellationToken cancellationToken = default)
+      {
+            var body = new
+            {
+                  query = GetAnimeByIdQuery,
+                  variables = new
+                  {
+                        id = aniListId
+                  }
+            };
+
+            try
+            {
+                  using HttpResponseMessage response = await _httpClient.PostAsJsonAsync("", body, cancellationToken);
+                  if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+
+                  if (!response.IsSuccessStatusCode)
+                        throw new AnimeProviderUnavailableException($"AniList returned status code {(int)response.StatusCode}.");
+
+                  AniListMediaResponse? payload = await response.Content.ReadFromJsonAsync<AniListMediaResponse>(cancellationToken);
+                  if (payload is null)
+                        throw new AnimeProviderUnavailableException("AniList returned an empty response.");
+
+                  return AniListMapper.ToAnimeDetails(payload);
+            }
+            catch (HttpRequestException ex)
+            {
+                  throw new AnimeProviderUnavailableException("Could not reach AniList.", ex);
+            }
+            catch (JsonException ex)
+            {
+                  throw new AnimeProviderUnavailableException("AniList returned an invalid response.", ex);
+            }
+            catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                  throw new AnimeProviderUnavailableException("AniList did not respond in time.", ex);
+            }
+      }
+
 }

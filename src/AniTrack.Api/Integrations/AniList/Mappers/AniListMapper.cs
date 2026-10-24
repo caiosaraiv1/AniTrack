@@ -1,9 +1,10 @@
 using AniTrack.Api.Domain;
 using AniTrack.Api.Integrations.AniList.Dtos;
+using Microsoft.AspNetCore.Mvc.Formatters;
 
 namespace AniTrack.Api.Integrations.AniList.Mappers;
 
-public static class AniListSearchMapper
+public static class AniListMapper
 {
       public static IReadOnlyList<AnimeSearchResult> ToSearchResults(AniListSearchResponse? searchResponse)
       {
@@ -12,6 +13,32 @@ public static class AniListSearchMapper
             return media.Select(ToSearchResult)
                               .OfType<AnimeSearchResult>()
                               .ToList();
+      }
+
+      public static AnimeDetails? ToAnimeDetails(AniListMediaResponse? mediaResponse)
+      {
+            AniListMediaDetails? media = mediaResponse?.Data?.Media;
+            if (media is null) return null;
+
+            string? title = ResolveTitle(media.Title);
+            if (title is null) return null;
+
+            AnimeFormat? format = MapFormat(media.Format);
+            if (format is null) return null;
+
+            AnimeStatus? nullableStatus = MapStatus(media.Status);
+            if (nullableStatus is null) return null;
+            AnimeStatus status = nullableStatus.Value;
+
+            int? nextEpisode = media.NextAiringEpisode?.Episode;
+
+            DateTimeOffset? nextEpisodeAiringAt = media.NextAiringEpisode is null ? null : DateTimeOffset.FromUnixTimeSeconds(media.NextAiringEpisode.AiringAt);
+
+            Uri? imageUrl = Uri.TryCreate(media.CoverImage?.Large, UriKind.Absolute, out Uri? parsedUrl)
+                  ? parsedUrl
+                  : null;
+
+            return new AnimeDetails(media.Id, media.IdMal, title, media.Episodes, nextEpisode, nextEpisodeAiringAt, status, imageUrl);
       }
 
       private static AnimeSearchResult? ToSearchResult(AniListSearchMedia searchMedia)
@@ -31,7 +58,7 @@ public static class AniListSearchMapper
             searchMedia.Episodes, searchMedia.SeasonYear, status);
       }
 
-      private static string? ResolveTitle(AniListSearchTitle? searchTitle)
+      private static string? ResolveTitle(AniListTitle? searchTitle)
       {
             return searchTitle?.English ?? searchTitle?.Romaji;
       }
