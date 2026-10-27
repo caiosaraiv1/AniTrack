@@ -60,4 +60,24 @@ public class PersonalAnimesController : ControllerBase
 
             return Ok(entities.Select(PersonalAnimeResponse.FromPersonalAnime).ToList());
       }
+
+      [HttpPatch("{aniListId:int}")]
+      public async Task<ActionResult<UpdateProgressResponse>> UpdateProgress(int aniListId, UpdateProgressRequest request, CancellationToken cancellationToken)
+      {
+            try
+            {
+                  PersonalAnime personalAnime = await _service.UpdateProgressAsync(aniListId, request.Episode, cancellationToken);
+                  PersonalAnimeResponse response = PersonalAnimeResponse.FromPersonalAnime(personalAnime);
+                  string? warning = personalAnime.ExceedsKnownEpisodes ? $"Episode {personalAnime.CurrentEpisode} is beyond the latest known episode ({personalAnime.Anime.MaxKnownEpisode})."
+                        : null;
+                  return Ok(new UpdateProgressResponse(response, warning));
+            }
+            catch (AnimeNotInListException ex)
+            {
+                  return Problem(
+                        statusCode: StatusCodes.Status404NotFound,
+                        title: "Anime not in list",
+                        detail: ex.Message);
+            }
+      }
 }
