@@ -1,0 +1,20 @@
+meta {
+  name: List watchlist
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/watchlist
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Lists every anime in the watchlist, ordered by title.
+  An empty list returns 200 with [].
+}

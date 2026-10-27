@@ -1,0 +1,31 @@
+meta {
+  name: Add anime
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/watchlist
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "aniListId": 269
+  }
+}
+
+assert {
+  res.status: eq 201
+}
+
+docs {
+  Adds an anime to the watchlist by its AniList ID.
+
+  Other cases worth trying:
+  - Same ID again -> 409 (already in list)
+  - 4835 (a movie) -> 404 (unsupported format)
+  - 999999999 -> 404 (does not exist)
+  - 0 -> 400 (validation)
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Search anime
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/anime/search?query=bleach
+  body: none
+  auth: none
+}
+
+params:query {
+  query: bleach
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Searches AniList for episodic formats only (TV, TV short, OVA, ONA).
+
+  Other cases worth trying:
+  - Empty `query` -> 400 (validation)
+  - AniList unreachable -> 503
+}

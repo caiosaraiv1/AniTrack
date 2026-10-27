@@ -1,0 +1,36 @@
+meta {
+  name: Update progress
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/watchlist/:aniListId
+  body: json
+  auth: none
+}
+
+params:path {
+  aniListId: 21
+}
+
+body:json {
+  {
+    "episode": 1181
+  }
+}
+
+assert {
+  res.status: eq 200
+}
+
+docs {
+  Updates the current episode of an anime in the watchlist.
+  If the episode is beyond the latest known one, the anime is resynced
+  with AniList and the response may include a `warning`.
+
+  Other cases worth trying:
+  - Episode equal to maxKnownEpisode -> 200, no warning
+  - -1 -> 400 (validation)
+  - An ID not in the list -> 404
+}
