@@ -34,4 +34,9 @@ public class PersonalAnimesService
 
             return personalAnime;
       }
+
+      public async Task<IReadOnlyList<PersonalAnime>> GetAllAsync(CancellationToken cancellationToken = default)
+      {
+            return await _repository.GetAllAsync();
+      }
 }

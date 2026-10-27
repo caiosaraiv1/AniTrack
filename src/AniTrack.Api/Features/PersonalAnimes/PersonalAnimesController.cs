@@ -52,4 +52,12 @@ public class PersonalAnimesController : ControllerBase
                       detail: "The anime catalog is temporarily unavailable. Please try again later.");
             }
       }
+
+      [HttpGet]
+      public async Task<ActionResult<IReadOnlyList<PersonalAnimeResponse>>> GetAll(CancellationToken cancellationToken)
+      {
+            IReadOnlyList<PersonalAnime> entities = await _service.GetAllAsync(cancellationToken);
+
+            return Ok(entities.Select(PersonalAnimeResponse.FromPersonalAnime).ToList());
+      }
 }
