@@ -2,6 +2,7 @@ using AniTrack.Api.Features.PersonalAnimes;
 using AniTrack.Api.Domain;
 using AniTrack.Api.Domain.Exceptions;
 using AniTrack.Api.Domain.Abstractions;
+using Microsoft.OpenApi;
 
 namespace AniTrack.Features.PersonalAnimes;
 
@@ -77,5 +78,15 @@ public class PersonalAnimesService
                       aniListId);
             }
             return personalAnime;
+      }
+
+      public async Task RemoveAsync(int aniListId, CancellationToken cancellationToken = default)
+      {
+            PersonalAnime? personalAnime = await _repository.GetByAniListIdAsync(aniListId, cancellationToken);
+            if (personalAnime is null)
+                  throw new AnimeNotInListException(aniListId);
+
+            _repository.Remove(personalAnime);
+            await _repository.SaveChangesAsync(cancellationToken);
       }
 }

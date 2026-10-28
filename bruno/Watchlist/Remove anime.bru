@@ -1,0 +1,27 @@
+meta {
+  name: Remove anime
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{baseUrl}}/watchlist/:aniListId
+  body: none
+  auth: none
+}
+
+params:path {
+  aniListId: 269
+}
+
+assert {
+  res.status: eq 204
+}
+
+docs {
+  Removes an anime from the watchlist, together with its AniList snapshot.
+
+  Other cases worth trying:
+  - Same ID again -> 404 (not in list)
+  - Add it back afterwards -> 201 (nothing left behind)
+}

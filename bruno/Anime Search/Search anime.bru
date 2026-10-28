@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/anime/search?query=bleach
+  url: {{baseUrl}}/anime/search?query=tokyo ghoul
   body: none
   auth: none
 }
 
 params:query {
-  query: bleach
+  query: tokyo ghoul
 }
 
 assert {
@@ -20,7 +20,7 @@ assert {
 
 docs {
   Searches AniList for episodic formats only (TV, TV short, OVA, ONA).
-
+  
   Other cases worth trying:
   - Empty `query` -> 400 (validation)
   - AniList unreachable -> 503

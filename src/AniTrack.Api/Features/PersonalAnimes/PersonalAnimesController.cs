@@ -80,4 +80,21 @@ public class PersonalAnimesController : ControllerBase
                         detail: ex.Message);
             }
       }
+
+      [HttpDelete("{aniListId:int}")]
+      public async Task<IActionResult> Remove(int aniListId, CancellationToken cancellationToken)
+      {
+            try
+            {
+                  await _service.RemoveAsync(aniListId, cancellationToken);
+                  return NoContent();
+            }
+            catch (AnimeNotInListException ex)
+            {
+                  return Problem(
+                        statusCode: StatusCodes.Status404NotFound,
+                        title: "Anime not in list",
+                        detail: ex.Message);
+            }
+      }
 }
