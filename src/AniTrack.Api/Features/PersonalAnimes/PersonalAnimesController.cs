@@ -1,7 +1,6 @@
 using AniTrack.Api.Domain;
 using AniTrack.Api.Features.PersonalAnimes.Dtos;
 using Microsoft.AspNetCore.Mvc;
-using AniTrack.Api.Domain.Exceptions;
 
 namespace AniTrack.Features.PersonalAnimes;
 
@@ -10,47 +9,20 @@ namespace AniTrack.Features.PersonalAnimes;
 public class PersonalAnimesController : ControllerBase
 {
       private readonly PersonalAnimesService _service;
-      private readonly ILogger<PersonalAnimesController> _logger;
 
-      public PersonalAnimesController(PersonalAnimesService personalAnimesService, ILogger<PersonalAnimesController> logger)
+      public PersonalAnimesController(PersonalAnimesService personalAnimesService)
       {
             _service = personalAnimesService;
-            _logger = logger;
       }
 
       [HttpPost]
       public async Task<ActionResult<PersonalAnimeResponse>> Add(AddPersonalAnimeRequest request, CancellationToken cancellationToken)
       {
-            try
-            {
-                  PersonalAnime personalAnime = await _service.AddAsync(request.AniListId, cancellationToken);
+            PersonalAnime personalAnime = await _service.AddAsync(request.AniListId, cancellationToken);
 
-                  PersonalAnimeResponse response = PersonalAnimeResponse.FromPersonalAnime(personalAnime);
+            PersonalAnimeResponse response = PersonalAnimeResponse.FromPersonalAnime(personalAnime);
 
-                  return StatusCode(StatusCodes.Status201Created, response);
-            }
-            catch (AnimeAlreadyInListException ex)
-            {
-                  return Problem(
-                      statusCode: StatusCodes.Status409Conflict,
-                      title: "Anime already in list",
-                      detail: ex.Message);
-            }
-            catch (AnimeNotFoundException ex)
-            {
-                  return Problem(
-                      statusCode: StatusCodes.Status404NotFound,
-                      title: "Anime not found",
-                      detail: ex.Message);
-            }
-            catch (AnimeProviderUnavailableException ex)
-            {
-                  _logger.LogError(ex, "Failed to add anime {AniListId} to the list", request.AniListId);
-                  return Problem(
-                      statusCode: StatusCodes.Status503ServiceUnavailable,
-                      title: "Anime catalog unavailable",
-                      detail: "The anime catalog is temporarily unavailable. Please try again later.");
-            }
+            return StatusCode(StatusCodes.Status201Created, response);
       }
 
       [HttpGet]
@@ -64,37 +36,17 @@ public class PersonalAnimesController : ControllerBase
       [HttpPatch("{aniListId:int}")]
       public async Task<ActionResult<UpdateProgressResponse>> UpdateProgress(int aniListId, UpdateProgressRequest request, CancellationToken cancellationToken)
       {
-            try
-            {
-                  PersonalAnime personalAnime = await _service.UpdateProgressAsync(aniListId, request.Episode, cancellationToken);
-                  PersonalAnimeResponse response = PersonalAnimeResponse.FromPersonalAnime(personalAnime);
-                  string? warning = personalAnime.ExceedsKnownEpisodes ? $"Episode {personalAnime.CurrentEpisode} is beyond the latest known episode ({personalAnime.Anime.MaxKnownEpisode})."
-                        : null;
-                  return Ok(new UpdateProgressResponse(response, warning));
-            }
-            catch (AnimeNotInListException ex)
-            {
-                  return Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Anime not in list",
-                        detail: ex.Message);
-            }
+            PersonalAnime personalAnime = await _service.UpdateProgressAsync(aniListId, request.Episode, cancellationToken);
+            PersonalAnimeResponse response = PersonalAnimeResponse.FromPersonalAnime(personalAnime);
+            string? warning = personalAnime.ExceedsKnownEpisodes ? $"Episode {personalAnime.CurrentEpisode} is beyond the latest known episode ({personalAnime.Anime.MaxKnownEpisode})."
+                  : null;
+            return Ok(new UpdateProgressResponse(response, warning));
       }
 
       [HttpDelete("{aniListId:int}")]
       public async Task<IActionResult> Remove(int aniListId, CancellationToken cancellationToken)
       {
-            try
-            {
-                  await _service.RemoveAsync(aniListId, cancellationToken);
-                  return NoContent();
-            }
-            catch (AnimeNotInListException ex)
-            {
-                  return Problem(
-                        statusCode: StatusCodes.Status404NotFound,
-                        title: "Anime not in list",
-                        detail: ex.Message);
-            }
+            await _service.RemoveAsync(aniListId, cancellationToken);
+            return NoContent();
       }
 }

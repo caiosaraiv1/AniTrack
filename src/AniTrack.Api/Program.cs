@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using AniTrack.Api.Domain.Abstractions;
+using AniTrack.Api.Infrastructure.ErrorHandling;
 using AniTrack.Api.Infrastructure.Persistence;
 using AniTrack.Api.Integrations.AniList;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,8 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IPersonalAnimesRepository, PersonalAnimesRepository>();
 builder.Services.AddScoped<PersonalAnimesService>();
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 
 var baseUrl = builder.Configuration["AniList:BaseUrl"] ?? throw new InvalidOperationException("Configuration 'AniList:BaseUrl' is missing. Add it to appsettings.json.");
 builder.Services
@@ -34,6 +37,8 @@ var connectionString = builder.Configuration.GetConnectionString("AniTrack") ?? 
       });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
