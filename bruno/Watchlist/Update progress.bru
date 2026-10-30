@@ -11,12 +11,12 @@ patch {
 }
 
 params:path {
-  aniListId: 21
+  aniListId: 1735
 }
 
 body:json {
   {
-    "episode": 1181
+    "episode": 10
   }
 }
 
@@ -28,7 +28,7 @@ docs {
   Updates the current episode of an anime in the watchlist.
   If the episode is beyond the latest known one, the anime is resynced
   with AniList and the response may include a `warning`.
-
+  
   Other cases worth trying:
   - Episode equal to maxKnownEpisode -> 200, no warning
   - -1 -> 400 (validation)

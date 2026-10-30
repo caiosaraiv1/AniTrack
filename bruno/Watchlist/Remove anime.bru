@@ -11,7 +11,7 @@ delete {
 }
 
 params:path {
-  aniListId: 269
+  aniListId: 1
 }
 
 assert {
@@ -20,7 +20,7 @@ assert {
 
 docs {
   Removes an anime from the watchlist, together with its AniList snapshot.
-
+  
   Other cases worth trying:
   - Same ID again -> 404 (not in list)
   - Add it back afterwards -> 201 (nothing left behind)

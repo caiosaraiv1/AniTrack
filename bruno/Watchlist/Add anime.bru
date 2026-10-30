@@ -12,7 +12,7 @@ post {
 
 body:json {
   {
-    "aniListId": 269
+    "aniListId": 1735
   }
 }
 
@@ -22,7 +22,7 @@ assert {
 
 docs {
   Adds an anime to the watchlist by its AniList ID.
-
+  
   Other cases worth trying:
   - Same ID again -> 409 (already in list)
   - 4835 (a movie) -> 404 (unsupported format)
