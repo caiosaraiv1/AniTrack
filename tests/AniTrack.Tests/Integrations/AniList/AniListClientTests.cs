@@ -85,6 +85,107 @@ public class AniListClientTests
             await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.SearchAsync("frieren"));
       }
 
+      [Theory]
+      [InlineData("""{}""")]
+      [InlineData("""{ "data": null }""")]
+      [InlineData("""{ "data": null, "errors": [] }""")]
+      [InlineData("""{ "errors": [{ "message": "Internal Server Error" }] }""")]
+      [InlineData("""{ "data": null, "errors": [{ "message": "Internal Server Error" }] }""")]
+      public async Task SearchAsync_SuccessStatusWithoutData_ThrowsProviderUnavailable(string body)
+      {
+            AniListClient client = CreateClient(JsonResponder(body));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.SearchAsync("frieren"));
+      }
+
+      [Theory]
+      [InlineData("""{ "data": { "Page": null }, "errors": [{ "message": "Internal Server Error" }] }""")]
+      [InlineData("""{ "data": { "Page": { "media": null } }, "errors": [{ "message": "Internal Server Error" }] }""")]
+      public async Task SearchAsync_ErrorsWithoutMedia_ThrowsProviderUnavailable(string body)
+      {
+            AniListClient client = CreateClient(JsonResponder(body));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.SearchAsync("frieren"));
+      }
+
+      [Theory]
+      [InlineData("""{ "data": { "Page": null } }""")]
+      [InlineData("""{ "data": { "Page": { "media": null } } }""")]
+      [InlineData("""{ "data": { "Page": null }, "errors": [] }""")]
+      public async Task SearchAsync_NoMediaAndNoErrors_ReturnsEmptyList(string body)
+      {
+            AniListClient client = CreateClient(JsonResponder(body));
+
+            IReadOnlyList<AnimeSearchResult> results = await client.SearchAsync("frieren");
+
+            Assert.Empty(results);
+      }
+
+      [Fact]
+      public async Task SearchAsync_ErrorsWithMedia_ReturnsResults()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  {
+                        "data": {
+                              "Page": {
+                                    "media": [
+                                          {
+                                                "id": 101,
+                                                "title": { "romaji": "Sousou no Frieren", "english": "Frieren" },
+                                                "format": "TV",
+                                                "status": "FINISHED"
+                                          }
+                                    ]
+                              }
+                        },
+                        "errors": [{ "message": "Partial failure" }]
+                  }
+                  """));
+
+            IReadOnlyList<AnimeSearchResult> results = await client.SearchAsync("frieren");
+
+            Assert.Equal(101, Assert.Single(results).AniListId);
+      }
+
+      [Fact]
+      public async Task SearchAsync_ErrorsWithoutData_ExceptionCarriesFirstErrorMessage()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  { "data": null, "errors": [{ "message": "Rate limited" }, { "message": "Other" }] }
+                  """));
+
+            AnimeProviderUnavailableException exception =
+                  await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.SearchAsync("frieren"));
+
+            Assert.Contains("Rate limited", exception.Message);
+      }
+
+      [Fact]
+      public async Task SearchAsync_NullItemInMedia_ReturnsValidItems()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  {
+                        "data": {
+                              "Page": {
+                                    "media": [
+                                          null,
+                                          {
+                                                "id": 101,
+                                                "title": { "romaji": "Sousou no Frieren", "english": "Frieren" },
+                                                "format": "TV",
+                                                "status": "FINISHED"
+                                          }
+                                    ]
+                              }
+                        }
+                  }
+                  """));
+
+            IReadOnlyList<AnimeSearchResult> results = await client.SearchAsync("frieren");
+
+            Assert.Equal(101, Assert.Single(results).AniListId);
+      }
+
       [Fact]
       public async Task SearchAsync_HttpRequestFails_ThrowsProviderUnavailable()
       {
@@ -158,6 +259,84 @@ public class AniListClientTests
             AniListClient client = CreateClient(JsonResponder(body));
 
             await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(101));
+      }
+
+      [Theory]
+      [InlineData("""{}""")]
+      [InlineData("""{ "data": null }""")]
+      [InlineData("""{ "data": null, "errors": [] }""")]
+      [InlineData("""{ "errors": [{ "message": "Internal Server Error" }] }""")]
+      [InlineData("""{ "data": null, "errors": [{ "message": "Internal Server Error" }] }""")]
+      public async Task GetByAniListIdAsync_SuccessStatusWithoutData_ThrowsProviderUnavailable(string body)
+      {
+            AniListClient client = CreateClient(JsonResponder(body));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(101));
+      }
+
+      [Fact]
+      public async Task GetByAniListIdAsync_ErrorsWithNullMedia_ThrowsProviderUnavailable()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  { "data": { "Media": null }, "errors": [{ "message": "Internal Server Error" }] }
+                  """));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(101));
+      }
+
+      [Theory]
+      [InlineData("""{ "data": { "Media": null } }""")]
+      [InlineData("""{ "data": { "Media": null }, "errors": [] }""")]
+      public async Task GetByAniListIdAsync_NullMediaAndNoErrors_ReturnsNull(string body)
+      {
+            AniListClient client = CreateClient(JsonResponder(body));
+
+            AnimeDetails? details = await client.GetByAniListIdAsync(101);
+
+            Assert.Null(details);
+      }
+
+      [Fact]
+      public async Task GetByAniListIdAsync_NotFoundWithErrorBody_ReturnsNull()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  { "data": { "Media": null }, "errors": [{ "message": "Not Found.", "status": 404 }] }
+                  """, HttpStatusCode.NotFound));
+
+            AnimeDetails? details = await client.GetByAniListIdAsync(101);
+
+            Assert.Null(details);
+      }
+
+      [Fact]
+      public async Task GetByAniListIdAsync_ResponseForDifferentId_ThrowsProviderUnavailable()
+      {
+            AniListClient client = CreateClient(JsonResponder(DetailsJson));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(999));
+      }
+
+      [Fact]
+      public async Task GetByAniListIdAsync_ResponseWithoutId_ThrowsProviderUnavailable()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  { "data": { "Media": { "title": { "romaji": "Sousou no Frieren" }, "format": "TV", "status": "FINISHED" } } }
+                  """));
+
+            await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(101));
+      }
+
+      [Fact]
+      public async Task GetByAniListIdAsync_ErrorsWithoutData_ExceptionCarriesFirstErrorMessage()
+      {
+            AniListClient client = CreateClient(JsonResponder("""
+                  { "data": null, "errors": [{ "message": "Rate limited" }, { "message": "Other" }] }
+                  """));
+
+            AnimeProviderUnavailableException exception =
+                  await Assert.ThrowsAsync<AnimeProviderUnavailableException>(() => client.GetByAniListIdAsync(101));
+
+            Assert.Contains("Rate limited", exception.Message);
       }
 
       [Fact]

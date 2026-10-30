@@ -2,7 +2,6 @@ using AniTrack.Api.Domain;
 using AniTrack.Api.Domain.Abstractions;
 using AniTrack.Api.Domain.Exceptions;
 using AniTrack.Api.Features.PersonalAnimes;
-using AniTrack.Features.PersonalAnimes;
 using AniTrack.Tests.Helpers;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -54,6 +53,16 @@ public class PersonalAnimesServiceTests
             Assert.Equal(0, personalAnime.CurrentEpisode);
             _repository.Received(1).Add(personalAnime);
             await _repository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+      }
+
+      [Fact]
+      public async Task GetAllAsync_WithCancellationToken_ForwardsTokenToRepository()
+      {
+            using CancellationTokenSource cancellation = new();
+
+            await _service.GetAllAsync(cancellation.Token);
+
+            await _repository.Received(1).GetAllAsync(cancellation.Token);
       }
 
       [Fact]

@@ -113,6 +113,45 @@ public class AniListMapperTests
       }
 
       [Fact]
+      public void ToSearchResults_NullItems_DiscardsThemAndKeepsOrder()
+      {
+            AniListSearchResponse response = SearchResponseWith(
+                  null,
+                  ValidSearchMedia with { Id = 1 },
+                  null,
+                  ValidSearchMedia with { Id = 2 });
+
+            IReadOnlyList<AnimeSearchResult> results = AniListMapper.ToSearchResults(response);
+
+            Assert.Equal([1, 2], results.Select(result => result.AniListId));
+      }
+
+      [Theory]
+      [InlineData("")]
+      [InlineData("   ")]
+      public void ToSearchResults_BlankEnglishTitle_UsesRomaji(string english)
+      {
+            AniListSearchMedia media = ValidSearchMedia with { Title = new AniListTitle(english, "Sousou no Frieren") };
+
+            IReadOnlyList<AnimeSearchResult> results = AniListMapper.ToSearchResults(SearchResponseWith(media));
+
+            Assert.Equal("Sousou no Frieren", Assert.Single(results).Title);
+      }
+
+      [Theory]
+      [InlineData("", "")]
+      [InlineData("   ", null)]
+      [InlineData(null, "   ")]
+      public void ToSearchResults_BlankTitles_DiscardsItem(string? english, string? romaji)
+      {
+            AniListSearchMedia media = ValidSearchMedia with { Title = new AniListTitle(english, romaji) };
+
+            IReadOnlyList<AnimeSearchResult> results = AniListMapper.ToSearchResults(SearchResponseWith(media));
+
+            Assert.Empty(results);
+      }
+
+      [Fact]
       public void ToAnimeDetails_NullMedia_ReturnsNull()
       {
             AnimeDetails? details = AniListMapper.ToAnimeDetails(new AniListMediaResponse(new AniListMediaData(null)));
@@ -178,7 +217,92 @@ public class AniListMapperTests
             Assert.Null(details.ImageUrl);
       }
 
-      private static AniListSearchResponse SearchResponseWith(params AniListSearchMedia[] media)
+      [Theory]
+      [InlineData("")]
+      [InlineData("   ")]
+      public void ToAnimeDetails_BlankEnglishTitle_UsesRomaji(string english)
+      {
+            AniListMediaDetails media = ValidMediaDetails with { Title = new AniListTitle(english, "Sousou no Frieren") };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.NotNull(details);
+            Assert.Equal("Sousou no Frieren", details.Title);
+      }
+
+      [Theory]
+      [InlineData("", "")]
+      [InlineData("   ", null)]
+      [InlineData(null, "   ")]
+      public void ToAnimeDetails_BlankTitles_ReturnsNull(string? english, string? romaji)
+      {
+            AniListMediaDetails media = ValidMediaDetails with { Title = new AniListTitle(english, romaji) };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.Null(details);
+      }
+
+      [Theory]
+      [InlineData(0)]
+      [InlineData(-1)]
+      public void ToAnimeDetails_NonPositiveEpisodes_ReturnsNullTotalEpisodes(int episodes)
+      {
+            AniListMediaDetails media = ValidMediaDetails with { Episodes = episodes };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.NotNull(details);
+            Assert.Null(details.TotalEpisodes);
+      }
+
+      [Theory]
+      [InlineData(0)]
+      [InlineData(-1)]
+      public void ToAnimeDetails_NonPositiveIdMal_ReturnsNullMalId(int idMal)
+      {
+            AniListMediaDetails media = ValidMediaDetails with { IdMal = idMal };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.NotNull(details);
+            Assert.Null(details.MalId);
+      }
+
+      [Theory]
+      [InlineData(0)]
+      [InlineData(-1)]
+      public void ToAnimeDetails_NonPositiveNextEpisode_ReturnsNullNextEpisodeAndDate(int episode)
+      {
+            AniListMediaDetails media = ValidMediaDetails with
+            {
+                  NextAiringEpisode = new AniListNextAiringEpisode(episode, AiringAt: 1700000000)
+            };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.NotNull(details);
+            Assert.Null(details.NextEpisode);
+            Assert.Null(details.NextEpisodeAiringAt);
+      }
+
+      [Fact]
+      public void ToAnimeDetails_NonPositiveNumbers_ProducesDetailsAcceptedByAnime()
+      {
+            AniListMediaDetails media = ValidMediaDetails with
+            {
+                  IdMal = 0,
+                  Episodes = 0,
+                  NextAiringEpisode = new AniListNextAiringEpisode(Episode: 0, AiringAt: 1700000000)
+            };
+
+            AnimeDetails? details = AniListMapper.ToAnimeDetails(MediaResponseWith(media));
+
+            Assert.NotNull(details);
+            Assert.Equal(media.Id, new Anime(details).AniListId);
+      }
+
+      private static AniListSearchResponse SearchResponseWith(params AniListSearchMedia?[] media)
       {
             return new AniListSearchResponse(new AniListSearchData(new AniListSearchPage(media)));
       }
