@@ -8,11 +8,11 @@ public static class AniListMapper
 {
       public static IReadOnlyList<AnimeSearchResult> ToSearchResults(AniListSearchResponse? searchResponse)
       {
-            IReadOnlyList<AniListSearchMedia> media = searchResponse?.Data?.Page?.Media ?? [];
+            IReadOnlyList<AniListSearchMedia?> media = searchResponse?.Data?.Page?.Media ?? [];
 
             return media.Select(ToSearchResult)
-                              .OfType<AnimeSearchResult>()
-                              .ToList();
+                  .OfType<AnimeSearchResult>()
+                  .ToList();
       }
 
       public static AnimeDetails? ToAnimeDetails(AniListMediaResponse? mediaResponse)
@@ -30,19 +30,28 @@ public static class AniListMapper
             if (nullableStatus is null) return null;
             AnimeStatus status = nullableStatus.Value;
 
-            int? nextEpisode = media.NextAiringEpisode?.Episode;
+            int? malId = PositiveOrNull(media.IdMal);
+            int? totalEpisodes = PositiveOrNull(media.Episodes);
 
-            DateTimeOffset? nextEpisodeAiringAt = media.NextAiringEpisode is null ? null : DateTimeOffset.FromUnixTimeSeconds(media.NextAiringEpisode.AiringAt);
+            AniListNextAiringEpisode? next = media.NextAiringEpisode is { Episode: > 0 } valid ? valid : null;
+            int? nextEpisode = next?.Episode;
+            DateTimeOffset? nextEpisodeAiringAt = next is null
+                  ? null
+                  : DateTimeOffset.FromUnixTimeSeconds(next.AiringAt);
 
             Uri? imageUrl = Uri.TryCreate(media.CoverImage?.Large, UriKind.Absolute, out Uri? parsedUrl)
                   ? parsedUrl
                   : null;
 
-            return new AnimeDetails(media.Id, media.IdMal, title, media.Episodes, nextEpisode, nextEpisodeAiringAt, status, imageUrl);
+            return new AnimeDetails(media.Id, malId, title, totalEpisodes, nextEpisode, nextEpisodeAiringAt, status, imageUrl);
       }
 
-      private static AnimeSearchResult? ToSearchResult(AniListSearchMedia searchMedia)
+      private static int? PositiveOrNull(int? value) => value > 0 ? value : null;
+
+      private static AnimeSearchResult? ToSearchResult(AniListSearchMedia? searchMedia)
       {
+            if (searchMedia is null) return null;
+
             string? title = ResolveTitle(searchMedia.Title);
             if (title is null) return null;
 
@@ -60,7 +69,13 @@ public static class AniListMapper
 
       private static string? ResolveTitle(AniListTitle? searchTitle)
       {
-            return searchTitle?.English ?? searchTitle?.Romaji;
+            if (!string.IsNullOrWhiteSpace(searchTitle?.English))
+                  return searchTitle.English;
+
+            if (!string.IsNullOrWhiteSpace(searchTitle?.Romaji))
+                  return searchTitle.Romaji;
+
+            return null;
       }
 
       private static AnimeFormat? MapFormat(string? format)

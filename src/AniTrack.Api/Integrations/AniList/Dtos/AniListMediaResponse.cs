@@ -1,6 +1,6 @@
 namespace AniTrack.Api.Integrations.AniList.Dtos;
 
-public record AniListMediaResponse(AniListMediaData? Data);
+public record AniListMediaResponse(AniListMediaData? Data, IReadOnlyList<AniListError>? Errors = null);
 
 public record AniListMediaData(AniListMediaDetails? Media);
 

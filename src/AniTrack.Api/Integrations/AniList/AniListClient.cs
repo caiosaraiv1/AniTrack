@@ -85,6 +85,12 @@ public class AniListClient : IAnimeProvider
                   if (payload is null)
                         throw new AnimeProviderUnavailableException("AniList returned an empty response.");
 
+                  if (payload.Data is null)
+                        throw new AnimeProviderUnavailableException(DescribeErrors(payload.Errors));
+
+                  if (payload.Data.Page?.Media is null && payload.Errors is { Count: > 0 })
+                        throw new AnimeProviderUnavailableException(DescribeErrors(payload.Errors));
+
                   IReadOnlyList<AnimeSearchResult> results = AniListMapper.ToSearchResults(payload);
 
                   int received = payload.Data?.Page?.Media?.Count ?? 0;
@@ -137,7 +143,19 @@ public class AniListClient : IAnimeProvider
                   if (payload is null)
                         throw new AnimeProviderUnavailableException("AniList returned an empty response.");
 
-                  return AniListMapper.ToAnimeDetails(payload);
+                  if (payload.Data is null)
+                        throw new AnimeProviderUnavailableException(DescribeErrors(payload.Errors));
+
+                  if (payload.Data.Media is null && payload.Errors is { Count: > 0 })
+                        throw new AnimeProviderUnavailableException(DescribeErrors(payload.Errors));
+
+                  AnimeDetails? details = AniListMapper.ToAnimeDetails(payload);
+
+                  if (details is not null && details.AniListId != aniListId)
+                        throw new AnimeProviderUnavailableException(
+                              $"AniList returned anime {details.AniListId} when anime {aniListId} was requested.");
+
+                  return details;
             }
             catch (HttpRequestException ex)
             {
@@ -151,6 +169,15 @@ public class AniListClient : IAnimeProvider
             {
                   throw new AnimeProviderUnavailableException("AniList did not respond in time.", ex);
             }
+      }
+
+      private static string DescribeErrors(IReadOnlyList<AniListError>? errors)
+      {
+            string? firstMessage = errors?.FirstOrDefault()?.Message;
+
+            return firstMessage is null
+                  ? "AniList returned no data."
+                  : $"AniList returned an error: {firstMessage}";
       }
 
 }
