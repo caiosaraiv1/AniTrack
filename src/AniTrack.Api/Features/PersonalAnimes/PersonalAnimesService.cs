@@ -4,7 +4,7 @@ using AniTrack.Api.Domain.Exceptions;
 using AniTrack.Api.Domain.Abstractions;
 using Microsoft.OpenApi;
 
-namespace AniTrack.Features.PersonalAnimes;
+namespace AniTrack.Api.Features.PersonalAnimes;
 
 public class PersonalAnimesService
 {
@@ -41,7 +41,7 @@ public class PersonalAnimesService
 
       public async Task<IReadOnlyList<PersonalAnime>> GetAllAsync(CancellationToken cancellationToken = default)
       {
-            return await _repository.GetAllAsync();
+            return await _repository.GetAllAsync(cancellationToken);
       }
 
       public async Task<PersonalAnime> UpdateProgressAsync(int aniListId, int episode, CancellationToken cancellationToken = default)

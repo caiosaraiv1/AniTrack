@@ -2,7 +2,7 @@ using AniTrack.Api.Domain;
 using AniTrack.Api.Features.PersonalAnimes.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
-namespace AniTrack.Features.PersonalAnimes;
+namespace AniTrack.Api.Features.PersonalAnimes;
 
 [ApiController]
 [Route("watchlist")]

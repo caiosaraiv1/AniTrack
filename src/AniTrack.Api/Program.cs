@@ -5,7 +5,6 @@ using AniTrack.Api.Infrastructure.Persistence;
 using AniTrack.Api.Integrations.AniList;
 using Microsoft.EntityFrameworkCore;
 using AniTrack.Api.Features.PersonalAnimes;
-using AniTrack.Features.PersonalAnimes;
 
 var builder = WebApplication.CreateBuilder(args);
 
