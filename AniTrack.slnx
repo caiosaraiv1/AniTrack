@@ -2,4 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/AniTrack.Api/AniTrack.Api.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AniTrack.Tests/AniTrack.Tests.csproj" />
+  </Folder>
 </Solution>
